@@ -15,7 +15,7 @@ ENV LANGUAGE en_US.UTF-8
 # Setting up the wineprefix to force 32 bit architecture.
 ENV WINEPREFIX /root/wine/.wine
 ENV WINEARCH win32
-ENV WINEDLLOVERRIDES "mscoree,mshtml="
+ENV WINEDLLOVERRIDES "mscoree,mshtml=,oleaut32=n,msado15=n"
 
 # We want the 32 bits version of wine allowing winetricks.
 RUN dpkg --add-architecture i386
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get upgrade -y && \
     # We need x11vnc for show info pc
     x11vnc xdotool fluxbox tilda \
     # for stream here
-    mpg123 ffmpeg cabextract zenity winbind xterm
+    initramfs-tools libglu1 mpg123 ffmpeg cabextract zenity winbind xterm
 
 # Download file what need!
 # RUN wget http://www.yucvision.com/upload/file/EasyVMS.exe
@@ -51,17 +51,18 @@ RUN wget -O - https://github.com/novnc/websockify/archive/v0.9.0.tar.gz | \
 #    mono-complete
     
 # wine
-RUN wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add - && \    
+RUN wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add - && \
     echo 'deb https://dl.winehq.org/wine-builds/ubuntu/ eoan main' | tee /etc/apt/sources.list.d/winehq.list && \
     apt-get update && apt-get install -y --no-install-recommends \
     winehq-devel xvfb
 
 RUN curl -SL -k https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks  -o /usr/bin/winetricks && chmod a+x /usr/bin/winetricks
 
-RUN wine --version && winetricks --version && echo $WINEARCH && uname -a
-
-RUN xvfb-run sh -c "winetricks -q mdac27 && wineserver --wait" && \
+RUN xvfb-run sh -c "winetricks -q vb6run && wineserver --wait" && \
+    xvfb-run sh -c "winetricks -q mdac28 && wineserver --wait" && \
     xvfb-run sh -c "winetricks -q jet40 && wineserver --wait"
+
+# msvcrt or xvfb-run sh -c "wine regsvr32 /i msado15.dll"
 
 RUN apt-get autoremove -y --purge software-properties-common && \
 	apt-get autoremove -y --purge && \
@@ -70,5 +71,10 @@ RUN apt-get autoremove -y --purge software-properties-common && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY tool/ /root/wine/
 
-CMD ["/usr/bin/supervisord"]
+COPY entrypoint.sh /etc/entrypoint.sh
+RUN chmod +x /etc/entrypoint.sh
+
+# Let script run after all done
+ENTRYPOINT ["sh", "/etc/entrypoint.sh"]
