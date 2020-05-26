@@ -58,7 +58,10 @@ RUN wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add - && \
 
 RUN curl -SL -k https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks  -o /usr/bin/winetricks && chmod a+x /usr/bin/winetricks
 
-RUN xvfb-run sh -c "winetricks -q vb6run && wineserver --wait" && \
+RUN xvfb-run sh -c "winetricks -q vb6run && wineserver --wait" && \ 
+    xvfb-run sh -c "winetricks -q dotnet40 && wineserver --wait" && \
+    xvfb-run sh -c "winetricks -q vcrun2008 && wineserver --wait" && \
+    xvfb-run sh -c "winetricks -q vcrun2015 && wineserver --wait" && \
     xvfb-run sh -c "winetricks -q mdac28 && wineserver --wait" && \
     xvfb-run sh -c "winetricks -q jet40 && wineserver --wait"
 
